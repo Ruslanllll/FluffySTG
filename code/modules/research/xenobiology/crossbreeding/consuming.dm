@@ -15,30 +15,36 @@ Consuming extracts:
 	var/cookies = 5 //Number of cookies to spawn
 	var/cookietype = /obj/item/slime_cookie
 
-/obj/item/slimecross/consuming/attackby(obj/item/O, mob/user)
-	if(IS_EDIBLE(O))
-		if(last_produced + cooldown > world.time)
-			to_chat(user, span_warning("[src] is still digesting after its last meal!"))
-			return
-		var/datum/reagent/N = O.reagents.has_reagent(/datum/reagent/consumable/nutriment)
-		if(N)
-			nutriment_eaten += N.volume
-			to_chat(user, span_notice("[src] opens up and swallows [O] whole!"))
-			qdel(O)
-			playsound(src, 'sound/items/eatfood.ogg', 20, TRUE)
-		else
-			to_chat(user, span_warning("[src] burbles unhappily at the offering."))
-		if(nutriment_eaten >= nutriment_required)
-			nutriment_eaten = 0
-			user.visible_message(span_notice("[src] swells up and produces a small pile of cookies!"))
-			playsound(src, 'sound/effects/splat.ogg', 40, TRUE)
-			last_produced = world.time
-			for(var/i in 1 to cookies)
-				var/obj/item/S = spawncookie()
-				S.pixel_x = base_pixel_x + rand(-5, 5)
-				S.pixel_y = base_pixel_y + rand(-5, 5)
-		return
-	..()
+/obj/item/slimecross/consuming/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!IS_EDIBLE(tool))
+		return NONE
+
+	if(last_produced + cooldown > world.time)
+		to_chat(user, span_warning("[src] is still digesting after its last meal!"))
+		return ITEM_INTERACT_BLOCKING
+
+	var/datum/reagent/nutriments = tool.reagents.has_reagent(/datum/reagent/consumable/nutriment)
+	if(!nutriments)
+		to_chat(user, span_warning("[src] burbles unhappily at the offering."))
+		return ITEM_INTERACT_BLOCKING
+
+	nutriment_eaten += nutriments.volume
+	to_chat(user, span_notice("[src] opens up and swallows [tool] whole!"))
+	qdel(tool)
+	playsound(src, 'sound/items/eatfood.ogg', 20, TRUE)
+
+	if(nutriment_eaten < nutriment_required)
+		return ITEM_INTERACT_SUCCESS
+
+	nutriment_eaten = 0
+	user.visible_message(span_notice("[src] swells up and produces a small pile of cookies!"))
+	playsound(src, 'sound/effects/splat.ogg', 40, TRUE)
+	last_produced = world.time
+	for(var/i in 1 to cookies)
+		var/obj/item/cookie = spawncookie()
+		cookie.pixel_x = base_pixel_x + rand(-5, 5)
+		cookie.pixel_y = base_pixel_y + rand(-5, 5)
+	return ITEM_INTERACT_SUCCESS
 
 /obj/item/slimecross/consuming/proc/spawncookie()
 	return new cookietype(get_turf(src))
@@ -122,11 +128,11 @@ Consuming extracts:
 
 /obj/item/slime_cookie/purple/do_effect(mob/living/M, mob/user)
 	var/need_mob_update = FALSE
-	need_mob_update += M.adjustBruteLoss(-5, updating_health = FALSE)
-	need_mob_update += M.adjustFireLoss(-5, updating_health = FALSE)
-	need_mob_update += M.adjustToxLoss(-5, updating_health = FALSE, forced = TRUE) //To heal slimepeople.
-	need_mob_update += M.adjustOxyLoss(-5, updating_health = FALSE)
-	need_mob_update += M.adjustOrganLoss(ORGAN_SLOT_BRAIN, -5)
+	need_mob_update += M.adjust_brute_loss(-5, updating_health = FALSE)
+	need_mob_update += M.adjust_fire_loss(-5, updating_health = FALSE)
+	need_mob_update += M.adjust_tox_loss(-5, updating_health = FALSE, forced = TRUE) //To heal slimepeople.
+	need_mob_update += M.adjust_oxy_loss(-5, updating_health = FALSE)
+	need_mob_update += M.adjust_organ_loss(ORGAN_SLOT_BRAIN, -5)
 	if(need_mob_update)
 		M.updatehealth()
 

@@ -16,7 +16,8 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/space_heater/wall_mounted, 29)
 
 /obj/machinery/space_heater/wall_mounted/Initialize(mapload)
 	. = ..()
-	find_and_hang_on_wall()
+	if(mapload)
+		find_and_mount_on_atom()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_FRONTIER)
 	RemoveElement(/datum/element/elevation, pixel_shift = 8) //they're on the wall, you can't climb this
 	RemoveElement(/datum/element/climbable)
@@ -43,7 +44,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/space_heater/wall_mounted, 29)
 		frame.cell = cell
 		cell?.forceMove(frame)
 	else
-		cell.forceMove(drop_location())
+		cell?.forceMove(drop_location())
 	cell = null
 	return ..()
 
@@ -65,10 +66,6 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/space_heater/wall_mounted, 29)
 	)
 	/// lazy-initialized cell stored in the actual heater (so that it can start with one without making a new one every placement)
 	var/obj/item/stock_parts/power_store/cell = /obj/machinery/space_heater::cell
-
-/obj/item/wallframe/wall_heater/Initialize(mapload)
-	. = ..()
-	register_context()
 
 /obj/item/wallframe/wall_heater/after_attach(obj/machinery/space_heater/wall_mounted/attached_to)
 	. = ..()
